@@ -3,9 +3,18 @@
 	import type { RemoteQuery } from '@sveltejs/kit';
 	import { onMount } from 'svelte';
 	import ExifReader from 'exifreader';
+	import { crossfade, fade } from 'svelte/transition';
+	import md from 'markdown-it';
 
 	let files: ReturnType<typeof getFiles> = $state({});
 	let selectedIndex: number | undefined = $state();
+
+	const mdParser = new md({});
+
+	const [send, receive] = crossfade({
+		duration: 400,
+		fallback: (node, params) => fade(node)
+	});
 
 	$effect(() => {
 		if (selectedIndex == undefined) {
@@ -15,33 +24,33 @@
 		}
 	});
 
-	let selectedData = $derived.by(() => {
-		if (
-			!files.ready ||
-			selectedIndex == undefined ||
-			selectedIndex < 0 ||
-			selectedIndex >= files.current.length ||
-			files.current[selectedIndex].type !== 'image' ||
-			!files.current[selectedIndex].path
-		) {
-			console.log('No image selected or invalid index');
-			return;
-		}
+	// let selectedData = $derived.by(() => {
+	// 	if (
+	// 		!files.ready ||
+	// 		selectedIndex == undefined ||
+	// 		selectedIndex < 0 ||
+	// 		selectedIndex >= files.current.length ||
+	// 		files.current[selectedIndex].type !== 'image' ||
+	// 		!files.current[selectedIndex].path
+	// 	) {
+	// 		console.log('No image selected or invalid index');
+	// 		return;
+	// 	}
 
-		// get image byte data
-		return fetch(files.current[selectedIndex].path)
-			.then((response) => response.arrayBuffer())
-			.then((buffer) => {
-				const tags = ExifReader.load(buffer);
-                return  (tags.parameters.value); // Ensure prompt is parsed if it exists
-				return tags;
-			});
-	});
+	// 	// get image byte data
+	// 	return fetch(files.current[selectedIndex].path)
+	// 		.then((response) => response.arrayBuffer())
+	// 		.then((buffer) => {
+	// 			const tags = ExifReader.load(buffer);
+	//             // return  (tags.parameters.value); // Ensure prompt is parsed if it exists
+	// 			return tags;
+	// 		});
+	// });
 
 	onMount(() => {
 		files = getFiles();
 		const id = setInterval(async () => {
-			// await files.refresh();
+			await files.refresh();
 		}, 5000);
 		return () => {
 			clearInterval(id);
@@ -60,35 +69,106 @@
 			>
 				{#if f.type == 'image'}
 					<img class="bg" src={f.path} alt="galery entry" />
-					<img src={f.path} alt="galery entry" />
+					{#if selectedIndex != i}
+						<img
+							src={f.path}
+							alt="galery entry"
+							out:send={{ key: f.path }}
+							in:receive={{ key: f.path }}
+						/>
+					{/if}
 				{/if}
 			</button>
 		{/each}
 	</div>
 	{#if selectedIndex != undefined}
 		{@const current = files.current[selectedIndex]}
-		<dialog open>
+		{@const currentPath = current?.path}
+		<dialog open transition:fade>
 			<button
+				class="close"
+				onclick={() => {
+					selectedIndex = undefined;
+				}}>X</button
+			>
+			<button
+				class="previous paging"
 				onclick={() => {
 					if (selectedIndex == undefined || !files.ready) return;
 					selectedIndex = (selectedIndex - 1 + files.current.length) % files.current.length;
 				}}>&leftarrow;</button
 			>
 			<button
+				class="next paging"
 				onclick={() => {
 					if (selectedIndex == undefined || !files.ready) return;
 					selectedIndex = (selectedIndex + 1) % files.current.length;
 				}}>&rightarrow;</button
 			>
-			<img style="max-width: 100px;" src={current.path} alt="galery entry" />
-{#await selectedData}
+			<img
+				src={current.path}
+				alt="galery entry"
+				out:send={{ key: currentPath }}
+				in:receive={{ key: currentPath }}
+			/>
+			<div class="details">
+				<dl>
+					<dt>Path:</dt>
+					<dd>{current.path}</dd>
+					{#if current.meta?.dimensions}
+						<dt>Dimensions:</dt>
+						<dd>{current.meta.dimensions.width} x {current.meta.dimensions.height}</dd>
+					{/if}
+					{#if current.meta?.seed}
+						<dt>Seed:</dt>
+						<dd>{current.meta.seed}</dd>
+					{/if}
+					{#if current.meta?.prompt}
+						<dt>Prompt:</dt>
+						<dd>{@html mdParser.render(current.meta.prompt.positive)}</dd>
+					{/if}
+                    {#if current.meta?.prompt?.negative}
+                        <dt>Negative Prompt:</dt>
+                        <dd>{@html mdParser.render(current.meta.prompt.negative)}</dd>
+                    {/if}
+                    {#if current.meta?.steps}
+                        <dt>Steps:</dt>
+                        <dd>{current.meta.steps}</dd>
+                    {/if}
+                    {#if current.meta?.additional && Object.keys(current.meta.additional).length > 0}
+                        <dt>Additional:</dt>
+                        <dd>
+                            {#each Object.entries(current.meta.additional) as [key, value]}
+                                <strong>{key}:</strong> {value}<br />
+                            {/each}
+                        </dd>
+                    {/if}
+
+					{#if current.meta?.cfg}
+						<dt>CFG Scale:</dt>
+						<dd>{current.meta.cfg}</dd>
+					{/if}
+					{#if current.meta?.model}
+						<dt>Model:</dt>
+						<dd>{current.meta.model}</dd>
+					{/if}
+					{#if current.meta?.sampler}
+						<dt>Sampler:</dt>
+						<dd>{current.meta.sampler}</dd>
+					{/if}
+					{#if current.meta?.sceduler}
+						<dt>Sceduler:</dt>
+						<dd>{current.meta.sceduler}</dd>
+					{/if}
+				</dl>
+			</div>
+			<!-- {#await selectedData}
 					Loading…
-				{:then data}{#if data}{data}
-						<!-- {JSON.stringify(data, undefined, 2)} -->
+				{:then data}{#if data}{JSON.stringify(data, null, 2)}
 					{:else}
 						No EXIF data found.
 					{/if}
-				{/await}
+				{/await} -->
 		</dialog>
 	{/if}
 {:else if files.loading}
@@ -111,7 +191,87 @@
 		width: 100vw;
 		height: 100vh;
 		background-color: rgba(200, 200, 200, 0.9);
-        overflow: scroll;
+		overflow-y: scroll;
+		overflow-x: hidden;
+		padding: 0;
+
+		& > img {
+            z-index: 900;
+			position: fixed;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			max-width: 90vw;
+			max-height: 90vh;
+			object-fit: contain;
+			margin: auto;
+
+            pointer-events: none;
+			display: block;
+			box-shadow:
+				0 0 10px rgba(0, 0, 0, 0.5),
+				0 0 20px rgba(0, 0, 0, 0.3);
+		}
+
+		& > .close {
+			position: fixed;
+			top: 1rem;
+			right: 1rem;
+			background-color: rgba(0, 0, 0, 0.5);
+			color: white;
+			border: none;
+			padding: 0.5rem;
+			cursor: pointer;
+			font-size: 1.5rem;
+			z-index: 10;
+			transition: background-color 0.3s ease;
+			height: 2rem;
+			width: 2rem;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			border-radius: 50%;
+			&:hover {
+				background-color: rgba(0, 0, 0, 0.8);
+			}
+		}
+
+		& > .paging {
+			position: fixed;
+			top: 50%;
+			transform: translateY(-50%);
+			background-color: rgba(0, 0, 0, 0.5);
+			color: white;
+			border: none;
+			padding: 1rem;
+			cursor: pointer;
+			font-size: 2rem;
+			z-index: 10;
+			transition: background-color 0.3s ease;
+			&.previous {
+				left: 1rem;
+			}
+			&.next {
+				right: 1rem;
+			}
+			&:hover {
+				background-color: rgba(0, 0, 0, 0.8);
+			}
+		}
+		.details {
+            z-index: 1000;
+            position: relative;
+			margin-top: 98vh;
+            background-color: rgba(200, 200, 200, 0.9);
+            transform: translateZ(-100px);
+            margin-left: 3rem;
+            margin-right: 3rem;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            			box-shadow:
+				0 0 10px rgba(0, 0, 0, 0.5),
+				0 0 20px rgba(0, 0, 0, 0.3);
+		}
 	}
 
 	.gallery {
