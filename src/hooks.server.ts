@@ -1,5 +1,4 @@
 import path from 'path';
-import { env } from '$env/dynamic/public';
 import fs from 'fs/promises';
 import type { Handle } from '@sveltejs/kit';
 import ExifReader from 'exifreader';

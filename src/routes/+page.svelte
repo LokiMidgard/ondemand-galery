@@ -76,6 +76,9 @@
 							out:send={{ key: f.path }}
 							in:receive={{ key: f.path }}
 						/>
+						{#if f.meta}
+							<div class="meta-badge">meta</div>
+						{/if}
 					{/if}
 				{/if}
 			</button>
@@ -127,22 +130,22 @@
 						<dt>Prompt:</dt>
 						<dd>{@html mdParser.render(current.meta.prompt.positive)}</dd>
 					{/if}
-                    {#if current.meta?.prompt?.negative}
-                        <dt>Negative Prompt:</dt>
-                        <dd>{@html mdParser.render(current.meta.prompt.negative)}</dd>
-                    {/if}
-                    {#if current.meta?.steps}
-                        <dt>Steps:</dt>
-                        <dd>{current.meta.steps}</dd>
-                    {/if}
-                    {#if current.meta?.additional && Object.keys(current.meta.additional).length > 0}
-                        <dt>Additional:</dt>
-                        <dd>
-                            {#each Object.entries(current.meta.additional) as [key, value]}
-                                <strong>{key}:</strong> {value}<br />
-                            {/each}
-                        </dd>
-                    {/if}
+					{#if current.meta?.prompt?.negative}
+						<dt>Negative Prompt:</dt>
+						<dd>{@html mdParser.render(current.meta.prompt.negative)}</dd>
+					{/if}
+					{#if current.meta?.steps}
+						<dt>Steps:</dt>
+						<dd>{current.meta.steps}</dd>
+					{/if}
+					{#if current.meta?.additional && Object.keys(current.meta.additional).length > 0}
+						<dt>Additional:</dt>
+						<dd>
+							{#each Object.entries(current.meta.additional) as [key, value]}
+								<strong>{key}:</strong> {value}<br />
+							{/each}
+						</dd>
+					{/if}
 
 					{#if current.meta?.cfg}
 						<dt>CFG Scale:</dt>
@@ -194,9 +197,10 @@
 		overflow-y: scroll;
 		overflow-x: hidden;
 		padding: 0;
+        z-index: 1000;
 
 		& > img {
-            z-index: 900;
+			z-index: 900;
 			position: fixed;
 			top: 50%;
 			left: 50%;
@@ -206,7 +210,7 @@
 			object-fit: contain;
 			margin: auto;
 
-            pointer-events: none;
+			pointer-events: none;
 			display: block;
 			box-shadow:
 				0 0 10px rgba(0, 0, 0, 0.5),
@@ -259,16 +263,16 @@
 			}
 		}
 		.details {
-            z-index: 1000;
-            position: relative;
+			z-index: 1000;
+			position: relative;
 			margin-top: 98vh;
-            background-color: rgba(200, 200, 200, 0.9);
-            transform: translateZ(-100px);
-            margin-left: 3rem;
-            margin-right: 3rem;
-            margin-bottom: 1rem;
-            padding: 1rem;
-            			box-shadow:
+			background-color: rgba(200, 200, 200, 0.9);
+			transform: translateZ(-100px);
+			margin-left: 3rem;
+			margin-right: 3rem;
+			margin-bottom: 1rem;
+			padding: 1rem;
+			box-shadow:
 				0 0 10px rgba(0, 0, 0, 0.5),
 				0 0 20px rgba(0, 0, 0, 0.3);
 		}
@@ -277,33 +281,70 @@
 	.gallery {
 		display: flex;
 		flex-wrap: wrap;
+		gap: 1rem;
+		justify-content: center;
 
-		img {
-			object-fit: contain;
+		.meta-badge {
 			grid-row: 1;
 			grid-column: 1;
-			filter: blur(0);
-			transition: transform 1200ms ease;
-			&:hover {
-				transform: scale(1.1);
-			}
-			cursor: pointer;
-		}
-		img.bg {
-			filter: blur(2px);
-			object-fit: cover;
-			grid-row: 1;
-			grid-column: 1;
-			transform: scaleX(1.3) scaleY(1.3);
-			overflow: hidden;
+			width: fit-content;
+			height: fit-content;
+			color: white;
+			padding: 0.5rem 3rem;
+			transform: translateY(1rem) translateX(-2rem) rotate(-45deg);
+			background-color: royalblue;
+			box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            z-index: 20;
 		}
 
-		* {
+		& > * {
 			width: 15rem;
 			height: 15rem;
 			display: grid;
 			overflow: hidden;
 			padding: 0;
+			&:is(button) {
+				border: none;
+				background: none;
+				padding: 0;
+				cursor: pointer;
+				position: relative;
+				transition:
+					box-shadow 300ms ease,
+					transform 300ms ease;
+				box-shadow: 0 0 0px rgba(0, 0, 0, 0.5);
+				&:hover {
+					z-index: 10;
+					box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+					transform: scale(1.05);
+				}
+			}
+			& > img {
+				width: 15rem;
+				height: 15rem;
+				object-fit: contain;
+				grid-row: 1;
+				grid-column: 1;
+				filter: blur(0);
+				transition: transform 1200ms ease;
+				z-index: 15;
+				&:hover {
+					/* transform: scale(1.1); */
+				}
+				cursor: pointer;
+				&.bg {
+					width: 15rem;
+					height: 15rem;
+
+					filter: blur(2px);
+					object-fit: cover;
+					grid-row: 1;
+					grid-column: 1;
+					transform: scaleX(1.3) scaleY(1.3);
+					overflow: hidden;
+					z-index: 10;
+				}
+			}
 		}
 	}
 </style>
