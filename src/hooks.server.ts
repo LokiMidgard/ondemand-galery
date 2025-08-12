@@ -42,7 +42,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 let files: Entry[] = [];
 
-const galeryPath = path.resolve((env as { GALLERY_PATH?: string }).GALLERY_PATH ?? './gallery');
+const galeryPath = path.resolve((process.env as { GALLERY_PATH?: string }).GALLERY_PATH ?? './gallery');
 console.log(`using gallery path ${galeryPath}`)
 // Ensure the gallery path exists
 try {
