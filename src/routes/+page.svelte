@@ -67,14 +67,13 @@
 			selectedIndex = (selectedIndex - 1 + files.current.length) % files.current.length;
 		} else if (e.key === 'ArrowRight' && selectedIndex !== undefined && files.ready) {
 			selectedIndex = (selectedIndex + 1) % files.current.length;
-		} else if (e.key === 'ArrowDown' && selectedIndex !== undefined ) {
-            // Scroll down the page
-            dialog?.scrollBy({ top: window.innerHeight, behavior: 'smooth' });
-		}else if (e.key === 'ArrowUp' && selectedIndex !== undefined) {
-            // Scroll up the page
-            dialog?.scrollBy({ top: -window.innerHeight, behavior: 'smooth' });
-        }
-
+		} else if (e.key === 'ArrowDown' && selectedIndex !== undefined) {
+			// Scroll down the page
+			dialog?.scrollBy({ top: window.innerHeight, behavior: 'smooth' });
+		} else if (e.key === 'ArrowUp' && selectedIndex !== undefined) {
+			// Scroll up the page
+			dialog?.scrollBy({ top: -window.innerHeight, behavior: 'smooth' });
+		}
 	}}
 />
 
@@ -99,6 +98,7 @@
 						{#if f.meta}
 							<div class="meta-badge">meta</div>
 						{/if}
+						<div class="time">{f.timestamp?.toLocaleString()}</div>
 					{/if}
 				{/if}
 			</button>
@@ -138,6 +138,10 @@
 				<dl>
 					<dt>Path:</dt>
 					<dd>{current.path}</dd>
+					<dt>Time:</dt>
+					<dd>
+						{current.timestamp ? current.timestamp.toLocaleString() : 'Unknown'}
+					</dd>
 					{#if current.meta?.dimensions}
 						<dt>Dimensions:</dt>
 						<dd>{current.meta.dimensions.width} x {current.meta.dimensions.height}</dd>
@@ -315,6 +319,18 @@
 			background-color: royalblue;
 			box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
 			z-index: 20;
+		}
+		.time {
+			grid-row: 1;
+			grid-column: 1;
+			position: relative;
+			color: white;
+            text-shadow: 0 0 1px rgba(0, 0, 0, 1),0 0 2px rgba(0, 0, 0, 1),0 0 3px rgba(0, 0, 0, 1),0 0 4px rgba(0, 0, 0, 1),
+                                0 0 10px rgba(0, 0, 0, 0.5);
+			padding: 0.5rem 1rem;
+            z-index: 21;
+            align-self: end;
+            justify-self: end;
 		}
 
 		& > * {
