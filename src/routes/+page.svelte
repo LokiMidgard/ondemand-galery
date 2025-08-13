@@ -3,11 +3,12 @@
 	import type { RemoteQuery } from '@sveltejs/kit';
 	import { onMount } from 'svelte';
 	import ExifReader from 'exifreader';
-	import { crossfade, fade } from 'svelte/transition';
+	import { crossfade, fade, fly } from 'svelte/transition';
 	import md from 'markdown-it';
 
 	let files: ReturnType<typeof getFiles> = $state({});
 	let selectedIndex: number | undefined = $state();
+	let dialog: HTMLDialogElement | undefined = $state();
 
 	const mdParser = new md({});
 
@@ -58,6 +59,25 @@
 	});
 </script>
 
+<svelte:body
+	onkeydown={(e) => {
+		if (e.key === 'Escape' && selectedIndex !== undefined) {
+			selectedIndex = undefined;
+		} else if (e.key === 'ArrowLeft' && selectedIndex !== undefined && files.ready) {
+			selectedIndex = (selectedIndex - 1 + files.current.length) % files.current.length;
+		} else if (e.key === 'ArrowRight' && selectedIndex !== undefined && files.ready) {
+			selectedIndex = (selectedIndex + 1) % files.current.length;
+		} else if (e.key === 'ArrowDown' && selectedIndex !== undefined ) {
+            // Scroll down the page
+            dialog?.scrollBy({ top: window.innerHeight, behavior: 'smooth' });
+		}else if (e.key === 'ArrowUp' && selectedIndex !== undefined) {
+            // Scroll up the page
+            dialog?.scrollBy({ top: -window.innerHeight, behavior: 'smooth' });
+        }
+
+	}}
+/>
+
 {#if files.ready}
 	<div class="gallery">
 		{#each files.current as f, i (f.path)}
@@ -87,7 +107,7 @@
 	{#if selectedIndex != undefined}
 		{@const current = files.current[selectedIndex]}
 		{@const currentPath = current?.path}
-		<dialog open transition:fade>
+		<dialog open transition:fade bind:this={dialog}>
 			<button
 				class="close"
 				onclick={() => {
@@ -114,7 +134,7 @@
 				out:send={{ key: currentPath }}
 				in:receive={{ key: currentPath }}
 			/>
-			<div class="details">
+			<div class="details" transition:fly={{ y: 200, duration: 600 }}>
 				<dl>
 					<dt>Path:</dt>
 					<dd>{current.path}</dd>
@@ -197,7 +217,7 @@
 		overflow-y: scroll;
 		overflow-x: hidden;
 		padding: 0;
-        z-index: 1000;
+		z-index: 1000;
 
 		& > img {
 			z-index: 900;
@@ -294,7 +314,7 @@
 			transform: translateY(1rem) translateX(-2rem) rotate(-45deg);
 			background-color: royalblue;
 			box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-            z-index: 20;
+			z-index: 20;
 		}
 
 		& > * {
