@@ -83,6 +83,8 @@ export function getFiles() {
 type Entry = {
     path: string,
     type: 'video' | 'image' | 'text'
+    timestamp?: Date
+
     meta?: {
         dimensions?: {
             width: number,
@@ -116,6 +118,7 @@ async function loadFiles() {
             const extension = path.extname(x).toLocaleLowerCase();
             const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif']
             const videoExtensions = ['.mp4', '.webm']
+
             if (imageExtensions.includes(extension)) {
                 return {
                     path: x,
@@ -135,15 +138,29 @@ async function loadFiles() {
 
                 const fullPath = path.join(galeryPath, x.path);
                 const meta = await extractMetadataFromImage(fullPath);
+                const fileDate = await fs.stat(fullPath).then(stat => stat.mtime);
+
 
                 const publicPath = path.join('gallery', x.path);
 
-                return { path: publicPath, type: x.type, meta };
+                return { path: publicPath, type: x.type, meta, timestamp: fileDate } satisfies Entry;
             }));
 
         files = await images;
 
-
+        files = files.sort((a, b) => {
+            if (a.timestamp && b.timestamp) {
+                return b.timestamp.getTime() - a.timestamp.getTime();
+            }
+            if (a.timestamp) {
+                return -1; // a is newer
+            }
+            if (b.timestamp) {
+                return 1; // b is newer
+            }
+            return 0; // both are equal
+        }
+        );
 
 
 
@@ -212,62 +229,62 @@ async function extractMetadataFromImage(imagePath: string): Promise<Entry['meta'
         const char = metadataText[index];
         if (escapeNext) {
             escapeNext = false;
-            if(char =='n'){
+            if (char == 'n') {
                 currentValue += '\n';
-            }else if(char == 'r'){
+            } else if (char == 'r') {
                 currentValue += '\r';
-            }else if(char == 't'){
+            } else if (char == 't') {
                 currentValue += '\t';
-            }else if(char == 'b'){
+            } else if (char == 'b') {
                 currentValue += '\b';
-            }else if(char == 'f'){
+            } else if (char == 'f') {
                 currentValue += '\f';
-            }else if(char == 'v'){
+            } else if (char == 'v') {
                 currentValue += '\v';
-            }else if(char == '0'){
+            } else if (char == '0') {
                 currentValue += '\0';
-            }else if(char == 'x'){
+            } else if (char == 'x') {
                 // hex escape sequence, e.g. \x20 for space
                 const hex = metadataText.substring(index + 1, index + 3);
                 currentValue += String.fromCharCode(parseInt(hex, 16));
                 index += 2; // skip the next two characters
-            }else if(char == 'u'){
+            } else if (char == 'u') {
                 // unicode escape sequence, e.g. \u20AC for Euro sign
                 const hex = metadataText.substring(index + 1, index + 5);
                 currentValue += String.fromCharCode(parseInt(hex, 16));
                 index += 4; // skip the next four characters
-            }else if(char == 'U'){
+            } else if (char == 'U') {
                 // unicode escape sequence, e.g. \U0001F600 for grinning face emoji
                 const hex = metadataText.substring(index + 1, index + 9);
                 currentValue += String.fromCodePoint(parseInt(hex, 16));
                 index += 8; // skip the next eight characters
-            }else if(char == 's'){
+            } else if (char == 's') {
                 // space escape sequence, e.g. \s for space
                 currentValue += ' ';
-            }else if(char == 'l'){
+            } else if (char == 'l') {
                 // line feed escape sequence, e.g. \l for line feed
                 currentValue += '\n';
-            }else if(char == 'c'){
+            } else if (char == 'c') {
                 // control character escape sequence, e.g. \cA for start of heading
                 const nextChar = metadataText[index + 1];
                 if (nextChar) {
                     currentValue += String.fromCharCode(nextChar.charCodeAt(0) - 64); // Control characters are ASCII 1-26
                     index++; // skip the next character
                 }
-            }else if(char == 'e'){
+            } else if (char == 'e') {
                 // escape character, e.g. \e for escape
                 currentValue += '\x1B'; // ASCII escape character
-            }else if(char == 'd'){
+            } else if (char == 'd') {
                 // decimal escape sequence, e.g. \d65 for 'A'
                 const decimal = metadataText.substring(index + 1, index + 3);
                 currentValue += String.fromCharCode(parseInt(decimal, 10));
                 index += 2; // skip the next two characters
-            }else if(char == 'p'){
+            } else if (char == 'p') {
                 // percent escape sequence, e.g. \p20 for space
                 const percent = metadataText.substring(index + 1, index + 3);
                 currentValue += String.fromCharCode(parseInt(percent, 16));
                 index += 2; // skip the next two characters
-            }else{
+            } else {
                 currentValue += char;
             }
             continue;
@@ -458,6 +475,8 @@ async function extractMetadataFromImage(imagePath: string): Promise<Entry['meta'
     //   "final_hashes": ""
     // }
     // we need to convert it to the expected metadata format
+
+
 
     const metadata: Entry['meta'] = {
         dimensions: data.width?.length > 0 && data.height?.length > 0 ? {
