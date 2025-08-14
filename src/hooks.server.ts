@@ -85,6 +85,7 @@ type Entry = {
     type: 'video' | 'image' | 'text'
     timestamp?: Date
 
+
     meta?: {
         dimensions?: {
             width: number,
@@ -100,7 +101,8 @@ type Entry = {
         sampler?: string,
         sceduler?: string,
         steps?: number,
-        additional: Record<string, string>
+        additional: Record<string, string | undefined>
+        took?: number
     }
 }
 
@@ -173,11 +175,104 @@ async function loadFiles() {
 async function extractMetadataFromImage(imagePath: string): Promise<Entry['meta'] | undefined> {
     const tags = await ExifReader.load(imagePath);
     const textToSearch = tags?.parameters?.value;
+
     if (!textToSearch) {
         return undefined;
     }
+    return await extractJSON(textToSearch) ?? await extractPythonObjectFromText(textToSearch)
+        ;
 
     // find the first occurrence  of `Metadata(`
+
+}
+
+async function extractJSON(textToSearch: string): Promise<Entry['meta'] | undefined> {
+
+    try {
+
+        // Example JSON structure
+        //   {
+        //     "took": 166.96579384803772,
+        //     "id": "ed0201c9-35c2-41f4-acfe-c1d9b2013e39",
+        //     "metadata": {
+        //         "modelname": "qwen_image_fp8_e4m3fn.safetensors",
+        //         "positive": "This is a digital illustration for a young adult / teen novel. Depict a 13-year-old boy standing in a vast, arid desert landscape. The boy has short, dark, frizzy brown hair, tanned skin, and amber-colored eyes, with a serious expression. He wears a narrow red headband. Over his shoulders is a worn black Mexican-style poncho: it is a simple, triangular, hoodless piece of cloth with no sleeves, hanging down to his belly in the front. Underneath the poncho he wears a dark brown long-sleeved tunic and loose-fitting brown trousers. On his feet are old Roman-style leather sandals. Around his waist is a wide red sash; a small, used knife is securely tucked under this sash so that only the handle partly sticks out. He also has a red scarf wrapped around his neck. His hands hang relaxed at his sides, and his stance leans slightly forward as if bracing against the wind.\\n\\nIn the background: a bright desert with scattered stones and a clear blue sky with a few small white clouds. The desert extends to the horizon where it meets a darker rocky outcrop. Fine sand blows across the ground in the wind.",
+        //         "negative": "",
+        //         "width": 128,
+        //         "height": 128,
+        //         "seed": 556805218312646,
+        //         "steps": 1,
+        //         "cfg": 2.4006744623184204,
+        //         "sampler_name": "simple",
+        //         "scheduler_name": "euler",
+        //         "denoise": 1.0,
+        //         "clip_skip": 0,
+        //         "custom": "foo",
+        //         "additional_hashes": "",
+        //         "ckpt_path": "/opt/comfyui/models/diffusion_models/qwen_image_fp8_e4m3fn.safetensors",
+        //         "a111_params": "This is a digital illustration for a young adult / teen novel. Depict a 13-year-old boy standing in a vast, arid desert landscape. The boy has short, dark, frizzy brown hair, tanned skin, and amber-colored eyes, with a serious expression. He wears a narrow red headband. Over his shoulders is a worn black Mexican-style poncho: it is a simple, triangular, hoodless piece of cloth with no sleeves, hanging down to his belly in the front. Underneath the poncho he wears a dark brown long-sleeved tunic and loose-fitting brown trousers. On his feet are old Roman-style leather sandals. Around his waist is a wide red sash; a small, used knife is securely tucked under this sash so that only the handle partly sticks out. He also has a red scarf wrapped around his neck. His hands hang relaxed at his sides, and his stance leans slightly forward as if bracing against the wind.\\n\\nIn the background: a bright desert with scattered stones and a clear blue sky with a few small white clouds. The desert extends to the horizon where it meets a darker rocky outcrop. Fine sand blows across the ground in the wind.\\nNegative prompt: \\nSteps: 1, Sampler: simple_euler, CFG scale: 2.4006744623184204, Seed: 556805218312646, Size: 128x128, foo, Model hash: 98763a1277, Model: qwen_image_fp8_e4m3fn, Hashes: {\\"model\\":\\"98763a1277\\"}, Version: ComfyUI",
+        //         "final_hashes": "qwen_image_fp8_e4m3fn:98763a1277"
+        //     }
+        // }
+
+        const json = JSON.parse(textToSearch) as {
+            id: string,
+            took: number,
+            metadata: {
+                modelname?: string,
+                positive?: string,
+                negative?: string,
+                width?: number,
+                height?: number,
+                seed?: number,
+                steps?: number,
+                cfg?: number,
+                sampler_name?: string,
+                scheduler_name?: string,
+                denoise?: number,
+                clip_skip?: number,
+                custom?: string,
+                additional_hashes?: string,
+                ckpt_path?: string,
+                a111_params?: string,
+                final_hashes?: string
+            }
+        };
+        if (!json.metadata) {
+            return undefined;
+        }
+        const metadata: Entry['meta'] = {
+            dimensions: json.metadata.width && json.metadata.height ? {
+                width: json.metadata.width,
+                height: json.metadata.height
+            } : undefined,
+            seed: json.metadata.seed,
+            prompt: json.metadata.positive ? {
+                positive: json.metadata.positive,
+                negative: json.metadata.negative
+            } : undefined,
+            cfg: json.metadata.cfg,
+            model: json.metadata.modelname,
+            sampler: json.metadata.sampler_name,
+            sceduler: json.metadata.scheduler_name,
+            steps: json.metadata.steps,
+            took: json.took,
+            additional: {
+                "modelHash": json.metadata.final_hashes?.split(':')[1],
+                "ckptPath": json.metadata.ckpt_path,
+                "custom": json.metadata.custom,
+                "additionalHashes": json.metadata.additional_hashes,
+                "a111Params": json.metadata.a111_params
+            }
+        };
+        return metadata;
+    } catch {
+        return undefined;
+    }
+
+}
+async function extractPythonObjectFromText(textToSearch: string) {
+
     const metadataStart = textToSearch.indexOf('Metadata(');
     if (metadataStart === -1) {
         return undefined;
@@ -477,6 +572,7 @@ async function extractMetadataFromImage(imagePath: string): Promise<Entry['meta'
     // we need to convert it to the expected metadata format
 
 
+    const custom = data.custom?.length > 0 ? parseCustomData(data.custom) : undefined;
 
     const metadata: Entry['meta'] = {
         dimensions: data.width?.length > 0 && data.height?.length > 0 ? {
@@ -493,22 +589,35 @@ async function extractMetadataFromImage(imagePath: string): Promise<Entry['meta'
         sampler: data.sampler_name?.length > 0 ? data.sampler_name : undefined,
         sceduler: data.scheduler_name?.length > 0 ? data.scheduler_name : undefined,
         steps: data.steps ? parseInt(data.steps, 10) : undefined,
+
+        took: custom?.elapsed_time,
         additional: {
         }
     };
 
     return metadata;
 
-}
 
+    function parseCustomData(data: string) {
+        try {
+
+            return JSON.parse(data) as {
+                elapsed_time?: number,
+            };
+        } catch {
+            return {};
+        }
+    }
+
+}
 (async () => {
 
 
     // Initialize files on server start
     // call loadFiles when the filesystem changes
     const waitch = fs.watch(galeryPath, { recursive: true });
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     for await (const event of waitch) {
-        console.log(`Filesystem change (${event.eventType}) detected in ${event.filename}`);
         await loadFiles();
     }
 })();

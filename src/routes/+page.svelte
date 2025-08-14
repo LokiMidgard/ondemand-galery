@@ -5,6 +5,7 @@
 	import ExifReader from 'exifreader';
 	import { crossfade, fade, fly } from 'svelte/transition';
 	import md from 'markdown-it';
+	import { TimeSpan } from '$lib';
 
 	let files: ReturnType<typeof getFiles> = $state({});
 	let selectedIndex: number | undefined = $state();
@@ -142,6 +143,12 @@
 					<dd>
 						{current.timestamp ? current.timestamp.toLocaleString() : 'Unknown'}
 					</dd>
+					{#if current.meta?.took}
+						<dt>Took:</dt>
+						<dd>
+							{new TimeSpan(0, 0, current.meta.took)}
+						</dd>
+					{/if}
 					{#if current.meta?.dimensions}
 						<dt>Dimensions:</dt>
 						<dd>{current.meta.dimensions.width} x {current.meta.dimensions.height}</dd>
@@ -325,12 +332,16 @@
 			grid-column: 1;
 			position: relative;
 			color: white;
-            text-shadow: 0 0 1px rgba(0, 0, 0, 1),0 0 2px rgba(0, 0, 0, 1),0 0 3px rgba(0, 0, 0, 1),0 0 4px rgba(0, 0, 0, 1),
-                                0 0 10px rgba(0, 0, 0, 0.5);
+			text-shadow:
+				0 0 1px rgba(0, 0, 0, 1),
+				0 0 2px rgba(0, 0, 0, 1),
+				0 0 3px rgba(0, 0, 0, 1),
+				0 0 4px rgba(0, 0, 0, 1),
+				0 0 10px rgba(0, 0, 0, 0.5);
 			padding: 0.5rem 1rem;
-            z-index: 21;
-            align-self: end;
-            justify-self: end;
+			z-index: 21;
+			align-self: end;
+			justify-self: end;
 		}
 
 		& > * {
