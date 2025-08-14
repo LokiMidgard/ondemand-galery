@@ -622,9 +622,18 @@ async function extractPythonObjectFromText(textToSearch: string) {
     // Initialize files on server start
     // call loadFiles when the filesystem changes
     const waitch = fs.watch(galeryPath, { recursive: true });
+    let timeout: NodeJS.Timeout | undefined = undefined;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     for await (const event of waitch) {
-        await loadFiles();
+        if (timeout) {
+            clearTimeout(timeout);
+        }
+        timeout = setTimeout(async () => {
+            timeout = undefined;
+            console.log('File system change detected, reloading files...');
+            await loadFiles();
+        }
+            , 3000);
     }
 })();
 
