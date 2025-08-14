@@ -173,15 +173,21 @@ async function loadFiles() {
 }
 
 async function extractMetadataFromImage(imagePath: string): Promise<Entry['meta'] | undefined> {
-    const tags = await ExifReader.load(imagePath);
-    const textToSearch = tags?.parameters?.value;
+    try {
 
-    if (!textToSearch) {
+        const tags = await ExifReader.load(imagePath);
+        const textToSearch = tags?.parameters?.value;
+
+        if (!textToSearch) {
+            return undefined;
+        }
+        return await extractJSON(textToSearch) ?? await extractPythonObjectFromText(textToSearch)
+            ;
+
+    } catch (error) {
+        console.error(`Error extracting metadata from image ${imagePath}:`, error);
         return undefined;
     }
-    return await extractJSON(textToSearch) ?? await extractPythonObjectFromText(textToSearch)
-        ;
-
     // find the first occurrence  of `Metadata(`
 
 }
