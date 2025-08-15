@@ -106,6 +106,7 @@ type Entry = {
     }
 } | {
     value: string,
+    path: string,
     type: 'text'
     timestamp?: Date
 
@@ -166,7 +167,8 @@ async function loadFiles() {
 
                 if (x.type == 'text') {
                     const content = await fs.readFile(fullPath, 'utf-8');
-                    return { value: content, type: x.type, timestamp: fileDate } satisfies Entry;
+                    const publicPath = path.join('gallery', x.path);
+                    return { path: publicPath, value: content, type: x.type, timestamp: fileDate } satisfies Entry;
                 } else {
 
                     const meta = x.type == 'image' ? await extractMetadataFromImage(fullPath) : undefined;
