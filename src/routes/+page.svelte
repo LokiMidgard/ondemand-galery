@@ -245,11 +245,11 @@
 		z-index: 1000;
 
 		& > .entry {
-			&img {
+			img& {
 				object-fit: contain;
 				pointer-events: none;
 			}
-			&div {
+			div& {
 				background-color: white;
 			}
 
