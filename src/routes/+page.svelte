@@ -108,33 +108,35 @@
 	{#if selectedIndex != undefined}
 		{@const current = files.current[selectedIndex]}
 		<dialog open transition:fade bind:this={dialog}>
+			<button
+				class="close"
+				onclick={() => {
+					selectedIndex = undefined;
+				}}>X</button
+			>
+			<button
+				class="previous paging"
+				onclick={() => {
+					if (selectedIndex == undefined || !files.ready) return;
+					selectedIndex = (selectedIndex - 1 + files.current.length) % files.current.length;
+				}}>&leftarrow;</button
+			>
+			<button
+				class="next paging"
+				onclick={() => {
+					if (selectedIndex == undefined || !files.ready) return;
+					selectedIndex = (selectedIndex + 1) % files.current.length;
+				}}>&rightarrow;</button
+			>
 			{#if current.type == 'text'}
-				<div>
+				<div class="entry">
 					{current.value}
 				</div>
 			{:else}
 				{@const currentPath = current?.path}
-				<button
-					class="close"
-					onclick={() => {
-						selectedIndex = undefined;
-					}}>X</button
-				>
-				<button
-					class="previous paging"
-					onclick={() => {
-						if (selectedIndex == undefined || !files.ready) return;
-						selectedIndex = (selectedIndex - 1 + files.current.length) % files.current.length;
-					}}>&leftarrow;</button
-				>
-				<button
-					class="next paging"
-					onclick={() => {
-						if (selectedIndex == undefined || !files.ready) return;
-						selectedIndex = (selectedIndex + 1) % files.current.length;
-					}}>&rightarrow;</button
-				>
+
 				<img
+					class="entry"
 					src={current.path}
 					alt="galery entry"
 					out:send={{ key: currentPath }}
@@ -236,7 +238,15 @@
 		padding: 0;
 		z-index: 1000;
 
-		& > img {
+		& > .entry {
+			&img{
+				object-fit: contain;
+				pointer-events: none;
+			}
+			&div{
+				background-color: white;
+			}
+
 			z-index: 900;
 			position: fixed;
 			top: 50%;
@@ -244,10 +254,8 @@
 			transform: translate(-50%, -50%);
 			max-width: 90vw;
 			max-height: 90vh;
-			object-fit: contain;
 			margin: auto;
 
-			pointer-events: none;
 			display: block;
 			box-shadow:
 				0 0 10px rgba(0, 0, 0, 0.5),
