@@ -101,6 +101,12 @@
 						{/if}
 						<div class="time">{f.timestamp?.toLocaleString()}</div>
 					{/if}
+				{:else if f.type == 'text'}
+					<div class="entry">
+						{f.value.substring(0, 100)}{f.value.length > 100 ? '…' : ''}
+					</div>
+				{:else}
+					<div class="entry">Unknown file type</div>
 				{/if}
 			</button>
 		{/each}
@@ -239,11 +245,11 @@
 		z-index: 1000;
 
 		& > .entry {
-			&img{
+			&img {
 				object-fit: contain;
 				pointer-events: none;
 			}
-			&div{
+			&div {
 				background-color: white;
 			}
 
