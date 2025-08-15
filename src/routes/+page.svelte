@@ -107,102 +107,108 @@
 	</div>
 	{#if selectedIndex != undefined}
 		{@const current = files.current[selectedIndex]}
-		{@const currentPath = current?.path}
 		<dialog open transition:fade bind:this={dialog}>
-			<button
-				class="close"
-				onclick={() => {
-					selectedIndex = undefined;
-				}}>X</button
-			>
-			<button
-				class="previous paging"
-				onclick={() => {
-					if (selectedIndex == undefined || !files.ready) return;
-					selectedIndex = (selectedIndex - 1 + files.current.length) % files.current.length;
-				}}>&leftarrow;</button
-			>
-			<button
-				class="next paging"
-				onclick={() => {
-					if (selectedIndex == undefined || !files.ready) return;
-					selectedIndex = (selectedIndex + 1) % files.current.length;
-				}}>&rightarrow;</button
-			>
-			<img
-				src={current.path}
-				alt="galery entry"
-				out:send={{ key: currentPath }}
-				in:receive={{ key: currentPath }}
-			/>
-			<div class="details" transition:fly={{ y: 200, duration: 600 }}>
-				<dl>
-					<dt>Path:</dt>
-					<dd>{current.path}</dd>
-					<dt>Time:</dt>
-					<dd>
-						{current.timestamp ? current.timestamp.toLocaleString() : 'Unknown'}
-					</dd>
-					{#if current.meta?.took}
-						<dt>Took:</dt>
+			{#if current.type == 'text'}
+				<div>
+					{current.value}
+				</div>
+			{:else}
+				{@const currentPath = current?.path}
+				<button
+					class="close"
+					onclick={() => {
+						selectedIndex = undefined;
+					}}>X</button
+				>
+				<button
+					class="previous paging"
+					onclick={() => {
+						if (selectedIndex == undefined || !files.ready) return;
+						selectedIndex = (selectedIndex - 1 + files.current.length) % files.current.length;
+					}}>&leftarrow;</button
+				>
+				<button
+					class="next paging"
+					onclick={() => {
+						if (selectedIndex == undefined || !files.ready) return;
+						selectedIndex = (selectedIndex + 1) % files.current.length;
+					}}>&rightarrow;</button
+				>
+				<img
+					src={current.path}
+					alt="galery entry"
+					out:send={{ key: currentPath }}
+					in:receive={{ key: currentPath }}
+				/>
+				<div class="details" transition:fly={{ y: 200, duration: 600 }}>
+					<dl>
+						<dt>Path:</dt>
+						<dd>{current.path}</dd>
+						<dt>Time:</dt>
 						<dd>
-							{new TimeSpan(0, 0, current.meta.took)}
+							{current.timestamp ? current.timestamp.toLocaleString() : 'Unknown'}
 						</dd>
-					{/if}
-					{#if current.meta?.dimensions}
-						<dt>Dimensions:</dt>
-						<dd>{current.meta.dimensions.width} x {current.meta.dimensions.height}</dd>
-					{/if}
-					{#if current.meta?.seed}
-						<dt>Seed:</dt>
-						<dd>{current.meta.seed}</dd>
-					{/if}
-					{#if current.meta?.prompt}
-						<dt>Prompt:</dt>
-						<dd>{@html mdParser.render(current.meta.prompt.positive)}</dd>
-					{/if}
-					{#if current.meta?.prompt?.negative}
-						<dt>Negative Prompt:</dt>
-						<dd>{@html mdParser.render(current.meta.prompt.negative)}</dd>
-					{/if}
-					{#if current.meta?.steps}
-						<dt>Steps:</dt>
-						<dd>{current.meta.steps}</dd>
-					{/if}
-					{#if current.meta?.additional && Object.keys(current.meta.additional).length > 0}
-						<dt>Additional:</dt>
-						<dd>
-							{#each Object.entries(current.meta.additional) as [key, value]}
-								<strong>{key}:</strong> {value}<br />
-							{/each}
-						</dd>
-					{/if}
+						{#if current.meta?.took}
+							<dt>Took:</dt>
+							<dd>
+								{new TimeSpan(0, 0, current.meta.took)}
+							</dd>
+						{/if}
+						{#if current.meta?.dimensions}
+							<dt>Dimensions:</dt>
+							<dd>{current.meta.dimensions.width} x {current.meta.dimensions.height}</dd>
+						{/if}
+						{#if current.meta?.seed}
+							<dt>Seed:</dt>
+							<dd>{current.meta.seed}</dd>
+						{/if}
+						{#if current.meta?.prompt}
+							<dt>Prompt:</dt>
+							<dd>{@html mdParser.render(current.meta.prompt.positive)}</dd>
+						{/if}
+						{#if current.meta?.prompt?.negative}
+							<dt>Negative Prompt:</dt>
+							<dd>{@html mdParser.render(current.meta.prompt.negative)}</dd>
+						{/if}
+						{#if current.meta?.steps}
+							<dt>Steps:</dt>
+							<dd>{current.meta.steps}</dd>
+						{/if}
+						{#if current.meta?.additional && Object.keys(current.meta.additional).length > 0}
+							<dt>Additional:</dt>
+							<dd>
+								{#each Object.entries(current.meta.additional) as [key, value]}
+									<strong>{key}:</strong> {value}<br />
+								{/each}
+							</dd>
+						{/if}
 
-					{#if current.meta?.cfg}
-						<dt>CFG Scale:</dt>
-						<dd>{current.meta.cfg}</dd>
-					{/if}
-					{#if current.meta?.model}
-						<dt>Model:</dt>
-						<dd>{current.meta.model}</dd>
-					{/if}
-					{#if current.meta?.sampler}
-						<dt>Sampler:</dt>
-						<dd>{current.meta.sampler}</dd>
-					{/if}
-					{#if current.meta?.sceduler}
-						<dt>Sceduler:</dt>
-						<dd>{current.meta.sceduler}</dd>
-					{/if}
-				</dl>
-			</div>
-			<!-- {#await selectedData}
+						{#if current.meta?.cfg}
+							<dt>CFG Scale:</dt>
+							<dd>{current.meta.cfg}</dd>
+						{/if}
+						{#if current.meta?.model}
+							<dt>Model:</dt>
+							<dd>{current.meta.model}</dd>
+						{/if}
+						{#if current.meta?.sampler}
+							<dt>Sampler:</dt>
+							<dd>{current.meta.sampler}</dd>
+						{/if}
+						{#if current.meta?.sceduler}
+							<dt>Sceduler:</dt>
+							<dd>{current.meta.sceduler}</dd>
+						{/if}
+					</dl>
+				</div>
+				<!-- {#await selectedData}
 					Loading…
-				{:then data}{#if data}{JSON.stringify(data, null, 2)}
+					{:then data}{#if data}{JSON.stringify(data, null, 2)}
 					{:else}
-						No EXIF data found.
+					No EXIF data found.
 					{/if}
-				{/await} -->
+					{/await} -->
+			{/if}
 		</dialog>
 	{/if}
 {:else if files.loading}

@@ -82,7 +82,7 @@ export function getFiles() {
 // load files from the gallery path on server start
 type Entry = {
     path: string,
-    type: 'video' | 'image' | 'text'
+    type: 'video' | 'image'
     timestamp?: Date
 
 
@@ -104,6 +104,22 @@ type Entry = {
         additional: Record<string, string | undefined>
         took?: number
     }
+} | {
+    value: string,
+    type: 'text'
+    timestamp?: Date
+
+
+    meta?: {
+        seed?: number,
+        prompt?: {
+            positive: string,
+            negative?: string
+        },
+        model?: string,
+        additional: Record<string, string | undefined>
+        took?: number
+    }
 }
 
 async function loadFiles() {
@@ -120,6 +136,7 @@ async function loadFiles() {
             const extension = path.extname(x).toLocaleLowerCase();
             const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif']
             const videoExtensions = ['.mp4', '.webm']
+            const textExtension = ['.md', '.txt']
 
             if (imageExtensions.includes(extension)) {
                 return {
@@ -133,19 +150,32 @@ async function loadFiles() {
                     type: 'video' as const
                 }
             }
+            if (textExtension.includes(extension)) {
+                return {
+                    path: x,
+                    type: 'text' as const
+                }
+            }
             console.log(`Dose not match ${x}`)
             return null;
-        }).filter((x): x is { path: string, type: 'video' | 'image' } => x != null)
+        }).filter((x): x is { path: string, type: 'video' | 'image' | 'text' } => x != null)
             .map(async x => {
 
                 const fullPath = path.join(galeryPath, x.path);
-                const meta = await extractMetadataFromImage(fullPath);
                 const fileDate = await fs.stat(fullPath).then(stat => stat.mtime);
 
+                if (x.type == 'text') {
+                    const content = await fs.readFile(fullPath, 'utf-8');
+                    return { value: content, type: x.type, timestamp: fileDate } satisfies Entry;
+                } else {
 
-                const publicPath = path.join('gallery', x.path);
+                    const meta = x.type == 'image' ? await extractMetadataFromImage(fullPath) : undefined;
 
-                return { path: publicPath, type: x.type, meta, timestamp: fileDate } satisfies Entry;
+
+                    const publicPath = path.join('gallery', x.path);
+
+                    return { path: publicPath, type: x.type, meta, timestamp: fileDate } satisfies Entry;
+                }
             }));
 
         files = await images;
