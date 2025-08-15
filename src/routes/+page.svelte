@@ -88,10 +88,10 @@
 				}}
 			>
 				{#if f.type == 'image'}
-					<img class="bg" src={f.path} alt="galery entry" />
+					<img class="bg" src={f.thumbnail ?? f.path} alt="galery entry" />
 					{#if selectedIndex != i}
 						<img
-							src={f.path}
+							src={f.thumbnail ?? f.path}
 							alt="galery entry"
 							out:send={{ key: f.path }}
 							in:receive={{ key: f.path }}

@@ -1,7 +1,13 @@
 import path from 'path';
 import fs from 'fs/promises';
+import syncfs from 'fs';
 import type { Handle } from '@sveltejs/kit';
 import ExifReader from 'exifreader';
+import sharp from 'sharp'
+
+
+
+const thumbnailPath = path.resolve((process.env as { THUMBNAIL_PATH?: string }).THUMBNAIL_PATH ?? './thumbnail');
 
 export const handle: Handle = async ({ event, resolve }) => {
     if (event.url.pathname.startsWith('/gallery')) {
@@ -33,7 +39,56 @@ export const handle: Handle = async ({ event, resolve }) => {
             console.error('Error reading file:', error);
             return new Response('File not found', { status: 404 });
         }
+    } else if (event.url.pathname.startsWith('/thumbnail')) {
+        // If the request is for a thumbnail, we need to return the file. it may be liying outside the public directory
+        // Normalize and resolve the file path to prevent directory traversal attacks.
+        const tempPath = path.resolve(thumbnailPath, '.' + event.url.pathname.replace('/thumbnail', ''));
+        if (!tempPath.startsWith(path.resolve(thumbnailPath))) {
+            // Security: Prevent access to files outside the thumbnail directory.
+            return new Response('File not found', { status: 404 });
+        }
+        // get the path for the original in the gallery
+        const originalPath = path.join(galeryPath, event.url.pathname.replace('/thumbnail', ''));
+
+        // check if the file exists, if not create the thumbnail
+        if (!syncfs.existsSync(tempPath)) {
+            // generate the thumbnail
+            console.log(`Creating thumbnail for ${originalPath} at ${tempPath}`);
+            try {
+                // Ensure the directory exists
+                await fs.mkdir(path.dirname(tempPath), { recursive: true });
+                const image = await sharp(originalPath)
+                    .resize(240, 240, {
+                        fit: 'inside',
+                        withoutEnlargement: true
+                    });
+                await image.toFile(tempPath);
+                console.log(`Thumbnail created at ${tempPath}`);
+            } catch (error) {
+                console.error('Error creating thumbnail:', error);
+                return new Response('Thumbnail not found', { status: 404 });
+            }
+        }
+        try {
+            const fileContent = await fs.readFile(tempPath);
+            return new Response(new Uint8Array(fileContent), {
+                status: 200,
+                headers: {
+                    'Content-Type': 'image/png',
+                    'Content-Disposition': `inline; filename="${path.basename(tempPath)}"`
+                }
+            });
+        } catch (error) {
+            console.error('Error reading thumbnail file:', error);
+            return new Response('Thumbnail not found', { status: 404 });
+        }
+
+
+
+
+
     }
+
 
     const response = await resolve(event);
     return response;
@@ -82,6 +137,7 @@ export function getFiles() {
 // load files from the gallery path on server start
 type Entry = {
     path: string,
+    thumbnail?: string,
     type: 'video' | 'image'
     timestamp?: Date
 
@@ -175,8 +231,9 @@ async function loadFiles() {
 
 
                     const publicPath = path.join('gallery', x.path);
+                    const publicThumbnailPath = path.join('thumbnail', x.path);
 
-                    return { path: publicPath, type: x.type, meta, timestamp: fileDate } satisfies Entry;
+                    return { path: publicPath, thumbnail: publicThumbnailPath, type: x.type, meta, timestamp: fileDate } satisfies Entry;
                 }
             }));
 

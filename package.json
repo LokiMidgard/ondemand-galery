@@ -14,12 +14,12 @@
 		"lint": "prettier --check . && eslint ."
 	},
 	"devDependencies": {
-		"@types/markdown-it": "^14.1.2",
 		"@eslint/compat": "^1.2.5",
 		"@eslint/js": "^9.18.0",
 		"@sveltejs/adapter-node": "^5.2.12",
 		"@sveltejs/kit": "^2.22.0",
 		"@sveltejs/vite-plugin-svelte": "^6.0.0",
+		"@types/markdown-it": "^14.1.2",
 		"@types/node": "^24.2.1",
 		"eslint": "^9.18.0",
 		"eslint-config-prettier": "^10.0.1",
@@ -36,6 +36,7 @@
 	},
 	"dependencies": {
 		"exifreader": "^4.31.1",
-		"markdown-it": "^14.1.0"
+		"markdown-it": "^14.1.0",
+		"sharp": "^0.34.3"
 	}
 }
