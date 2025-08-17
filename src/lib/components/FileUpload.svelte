@@ -12,8 +12,11 @@
 	// Props
 	interface Props {
 		onUploadComplete?: () => void;
+		maxFileSizeMB?: number;
 	}
-	let { onUploadComplete }: Props = $props();
+	let { onUploadComplete, maxFileSizeMB = 50 }: Props = $props();
+
+	const maxFileSize = maxFileSizeMB * 1024 * 1024; // Convert MB to bytes
 
 	function handleFileSelect(event: Event) {
 		const target = event.target as HTMLInputElement;
@@ -50,6 +53,14 @@
 	async function uploadFiles(files: File[]) {
 		if (files.length === 0) return;
 
+		// Check file sizes on client side first
+		const oversizedFiles = files.filter(file => file.size > maxFileSize);
+		if (oversizedFiles.length > 0) {
+			const fileNames = oversizedFiles.map(f => f.name).join(', ');
+			uploadError = `File(s) too large: ${fileNames}. Maximum size is ${maxFileSizeMB}MB`;
+			return;
+		}
+
 		isUploading = true;
 		uploadError = '';
 		uploadMessage = '';
@@ -65,6 +76,11 @@
 				method: 'POST',
 				body: formData
 			});
+
+			if (response.status === 413) {
+				uploadError = `Files too large for server. Try reducing file size or check server configuration. Max allowed: ${maxFileSizeMB}MB`;
+				return;
+			}
 
 			const result = await response.json();
 
@@ -82,16 +98,27 @@
 					onUploadComplete();
 				}
 				
+				// Show errors if any
+				if (result.errors && result.errors.length > 0) {
+					const errorMessages = result.errors.map((err: any) => `${err.name}: ${err.error}`).join('\n');
+					uploadError = errorMessages;
+				}
+				
 				// Clear success message after 3 seconds
 				setTimeout(() => {
 					uploadMessage = '';
 					uploadProgress = 0;
+					uploadError = '';
 				}, 3000);
 			} else {
-				uploadError = result.error || 'Upload failed';
+				uploadError = result.error || result.message || 'Upload failed';
 			}
 		} catch (error) {
-			uploadError = error instanceof Error ? error.message : 'Upload failed';
+			if (error instanceof Error && error.message.includes('413')) {
+				uploadError = `File too large for server. Try reducing file size or check server configuration. Max allowed: ${maxFileSizeMB}MB`;
+			} else {
+				uploadError = error instanceof Error ? error.message : 'Upload failed';
+			}
 		} finally {
 			isUploading = false;
 		}
@@ -110,15 +137,8 @@
 		ondrop={handleDrop}
 		ondragover={handleDragOver}
 		ondragleave={handleDragLeave}
-		role="button"
-		tabindex="0"
-		onclick={openFileDialog}
-		onkeydown={(e) => {
-			if (e.key === 'Enter' || e.key === ' ') {
-				e.preventDefault();
-				openFileDialog();
-			}
-		}}
+		role="region"
+		aria-label="File upload area"
 	>
 		<input
 			bind:this={fileInput}
@@ -147,8 +167,8 @@
 						<polyline points="17,8 12,3 7,8"/>
 						<line x1="12" y1="3" x2="12" y2="15"/>
 					</svg>
-					<p class="primary-text">Drop files here or click to upload</p>
-					<p class="secondary-text">Supports images, text files (.txt, .md)</p>
+					<p class="primary-text">Drop files here</p>
+					<p class="secondary-text">Supports images, text files (.txt, .md) up to {maxFileSizeMB}MB</p>
 					<button type="button" class="upload-button" onclick={openFileDialog}>
 						Choose Files
 					</button>
@@ -182,7 +202,6 @@
 		border-radius: 8px;
 		padding: 3rem 2rem;
 		text-align: center;
-		cursor: pointer;
 		transition: 
 			border-color 0.3s ease,
 			background-color 0.3s ease,
@@ -205,7 +224,6 @@
 	.drop-zone.uploading {
 		border-color: #28a745;
 		background-color: #f8fff9;
-		cursor: not-allowed;
 	}
 
 	.upload-content {

@@ -17,7 +17,7 @@ A SvelteKit-based gallery application that displays images and text files with m
 
 ## Environment Configuration
 
-The application uses environment variables to configure file paths:
+The application uses environment variables to configure file paths and upload limits:
 
 ```bash
 # Path where gallery files are stored and uploaded files will be saved
@@ -25,9 +25,28 @@ GALLERY_PATH=./gallery
 
 # Path where thumbnails are cached  
 THUMBNAIL_PATH=./thumbnail
+
+# Maximum file size for uploads in MB (default: 50)
+MAX_FILE_SIZE_MB=50
+
+# Maximum request body size (default: 50mb)
+MAX_REQUEST_SIZE=50mb
 ```
 
-Copy `.env.example` to `.env` and adjust paths as needed.
+Copy `.env.example` to `.env` and adjust values as needed.
+
+### File Upload Configuration
+
+The application supports file uploads with configurable size limits:
+
+- **Client-side validation**: Files are checked before upload
+- **Server-side validation**: Additional validation on the server
+- **Configurable limits**: Set `MAX_FILE_SIZE_MB` to adjust the limit
+
+For large files (>50MB), you may need to:
+1. Increase `MAX_FILE_SIZE_MB` and `MAX_REQUEST_SIZE` in your environment
+2. Restart the server after changing these values
+3. For production deployments, ensure your reverse proxy (nginx, etc.) also allows large uploads
 
 ## Supported File Types
 
