@@ -1,0 +1,5 @@
+This is a test text file for the upload functionality.
+
+It contains some sample content to test the gallery's file upload feature.
+
+The file should appear in the gallery once uploaded.

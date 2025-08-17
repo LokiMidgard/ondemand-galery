@@ -6,8 +6,9 @@
 	import { crossfade, fade, fly } from 'svelte/transition';
 	import md from 'markdown-it';
 	import { TimeSpan } from '$lib';
+	import FileUpload from '$lib/components/FileUpload.svelte';
 
-	let files: ReturnType<typeof getFiles> = $state({});
+	let files = $state(getFiles());
 	let selectedIndex: number | undefined = $state();
 	let dialog: HTMLDialogElement | undefined = $state();
 
@@ -50,7 +51,6 @@
 	// });
 
 	onMount(() => {
-		files = getFiles();
 		const id = setInterval(async () => {
 			await files.refresh();
 		}, 5000);
@@ -58,6 +58,11 @@
 			clearInterval(id);
 		};
 	});
+
+	function handleUploadComplete() {
+		// Refresh files immediately after upload
+		files.refresh();
+	}
 </script>
 
 <svelte:body
@@ -79,6 +84,10 @@
 />
 
 {#if files.ready}
+	<details>
+		<summary>Upload Files</summary>
+		<FileUpload onUploadComplete={handleUploadComplete} />
+	</details>
 	<div class="gallery">
 		{#each files.current as f, i (f.path)}
 			<button

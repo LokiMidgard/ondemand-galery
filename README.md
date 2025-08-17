@@ -1,6 +1,39 @@
-# sv
+# On-Demand Gallery
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A SvelteKit-based gallery application that displays images and text files with metadata extraction and file upload capabilities.
+
+## Features
+
+- **Gallery Display**: View images and text files in a responsive grid layout
+- **File Upload**: Drag and drop or click to upload new files to the gallery
+- **Metadata Extraction**: Automatically extracts EXIF data from images including:
+  - AI generation parameters (prompts, models, seeds, etc.)
+  - Image dimensions and technical details
+  - Custom metadata from various sources
+- **Thumbnails**: Automatic thumbnail generation for better performance
+- **Modal View**: Full-screen view with navigation and detailed metadata
+- **Keyboard Navigation**: Arrow keys for navigation, Escape to close
+- **Real-time Updates**: Gallery automatically updates when new files are added
+
+## Environment Configuration
+
+The application uses environment variables to configure file paths:
+
+```bash
+# Path where gallery files are stored and uploaded files will be saved
+GALLERY_PATH=./gallery
+
+# Path where thumbnails are cached  
+THUMBNAIL_PATH=./thumbnail
+```
+
+Copy `.env.example` to `.env` and adjust paths as needed.
+
+## Supported File Types
+
+- **Images**: .png, .jpg, .jpeg, .gif
+- **Videos**: .mp4, .webm (display support)
+- **Text**: .md, .txt
 
 ## Creating a project
 
