@@ -105,9 +105,6 @@
 							out:send={{ key: f.path }}
 							in:receive={{ key: f.path }}
 						/>
-						<a href={f.path} download>
-							Download
-						</a>
 						{#if f.meta}
 							<div class="meta-badge">meta</div>
 						{/if}
@@ -160,6 +157,26 @@
 					out:send={{ key: currentPath }}
 					in:receive={{ key: currentPath }}
 				/>
+				<a href={current.path} download> Download </a>
+
+				<button
+					onclick={async () => {
+						if (!current.path) return;
+						await fetch(`/api/files`, {
+							method: 'DELETE',
+							headers: {
+								'Content-Type': 'application/json'
+							},
+							body: JSON.stringify({ filenames: [current.path] })
+						});
+						selectedIndex = undefined;
+						await files.refresh();
+
+					}}
+				>
+					Delete
+				</button>
+
 				<div class="details" transition:fly={{ y: 200, duration: 600 }}>
 					<dl>
 						<dt>Path:</dt>

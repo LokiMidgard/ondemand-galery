@@ -265,7 +265,7 @@ async function extractMetadataFromImage(imagePath: string): Promise<Entry['meta'
     try {
 
         const tags = await ExifReader.load(imagePath);
-        console.log('EXIF tags for', imagePath, tags);
+        // console.log('EXIF tags for', imagePath, tags);
         const textToSearch = tags?.parameters?.value;
 
         if (!textToSearch) {
