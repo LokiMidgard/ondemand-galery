@@ -13,10 +13,19 @@ export const DELETE: RequestHandler = async ({ request }) => {
             return json({ error: 'No filenames provided' }, { status: 400 });
         }
 
+
+
         const deletedFiles: string[] = [];
         const notFoundFiles: string[] = [];
 
         for (const filename of filenames) {
+            if(!filename.startsWith('gallery/')) {
+                notFoundFiles.push(filename);
+                continue;
+            }
+            if(filename.includes('..')) {
+             throw new Error('Invalid filename, .. not allowed.');
+            }
             const filePath = path.join(galeryPath, filename);
             try {
                 await fs.unlink(filePath);

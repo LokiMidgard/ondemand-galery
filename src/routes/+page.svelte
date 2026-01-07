@@ -157,25 +157,26 @@
 					out:send={{ key: currentPath }}
 					in:receive={{ key: currentPath }}
 				/>
-				<a href={current.path} download> Download </a>
+				<div class="options">
+					<a href={current.path} download> Download </a>
 
-				<button
-					onclick={async () => {
-						if (!current.path) return;
-						await fetch(`/api/files`, {
-							method: 'DELETE',
-							headers: {
-								'Content-Type': 'application/json'
-							},
-							body: JSON.stringify({ filenames: [current.path] })
-						});
-						selectedIndex = undefined;
-						await files.refresh();
-
-					}}
-				>
-					Delete
-				</button>
+					<button
+						onclick={async () => {
+							if (!current.path) return;
+							await fetch(`/api/files`, {
+								method: 'DELETE',
+								headers: {
+									'Content-Type': 'application/json'
+								},
+								body: JSON.stringify({ filenames: [current.path] })
+							});
+							selectedIndex = undefined;
+							await files.refresh();
+						}}
+					>
+						Delete
+					</button>
+				</div>
 
 				<div class="details" transition:fly={{ y: 200, duration: 600 }}>
 					<dl>
@@ -342,6 +343,50 @@
 				background-color: rgba(0, 0, 0, 0.8);
 			}
 		}
+
+		.options {
+			position: fixed;
+			top: 1rem;
+			left: 1rem;
+			z-index: 1000;
+			display: flex;
+			flex-direction: row;
+			justify-content: flex-start;
+			align-items: center;
+			gap: 0;
+			& > button,
+			& > a {
+				background-color: rgba(0, 0, 0, 0.5);
+				color: white;
+				border: none;
+				padding: 0.5rem 1rem;
+				cursor: pointer;
+				font-size: 1rem;
+				transition: background-color 0.3s ease;
+				border-radius: 4px;
+				text-decoration: none;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				&:last-child {
+					border-bottom-left-radius: 0;
+					border-top-left-radius: 0;
+				}
+				&:first-child {
+					border-bottom-right-radius: 0;
+					border-top-right-radius: 0;
+				}
+
+				&:hover {
+					background-color: rgba(0, 0, 0, 0.8);
+				}
+				& > svg {
+					width: 1rem;
+					height: 1rem;
+				}
+			}
+		}
+
 		.details {
 			z-index: 1000;
 			position: relative;
