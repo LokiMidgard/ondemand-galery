@@ -19,18 +19,27 @@ export const DELETE: RequestHandler = async ({ request }) => {
         const notFoundFiles: string[] = [];
 
         for (const filename of filenames) {
-            if(!filename.startsWith('gallery/')) {
+            if (!filename.startsWith('gallery/')) {
                 notFoundFiles.push(filename);
+                console.warn('Skipping invalid filename, does not start with gallery/:', filename);
                 continue;
             }
-            if(filename.includes('..')) {
-             throw new Error('Invalid filename, .. not allowed.');
+            if (filename.includes('..')) {
+                console.warn('Skipping invalid filename, .. not allowed:', filename);
+                throw new Error('Invalid filename, .. not allowed.');
             }
-            const filePath = path.join(galeryPath, filename);
+            
+            const changedFilename = filename.replace(/^gallery\//, '');
+            if(changedFilename.startsWith('/')) {
+                console.warn('Skipping invalid filename, leading / not allowed:', filename);
+                throw new Error('Invalid filename, leading / not allowed.');
+            }
+            const filePath = path.join(galeryPath, changedFilename);
             try {
                 await fs.unlink(filePath);
                 deletedFiles.push(filename);
             } catch (err) {
+                console.warn('File not found for deletion:', filePath);
                 notFoundFiles.push(filename);
             }
         }
@@ -52,9 +61,9 @@ export const DELETE: RequestHandler = async ({ request }) => {
 
     } catch (error) {
         console.error('Delete error:', error);
-        return json({ 
-            error: 'Failed to delete files', 
-            details: error instanceof Error ? error.message : 'Unknown error' 
+        return json({
+            error: 'Failed to delete files',
+            details: error instanceof Error ? error.message : 'Unknown error'
         }, { status: 500 });
     }
 };
