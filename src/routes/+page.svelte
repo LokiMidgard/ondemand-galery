@@ -105,6 +105,9 @@
 							out:send={{ key: f.path }}
 							in:receive={{ key: f.path }}
 						/>
+						<a href={f.path} download>
+							Download
+						</a>
 						{#if f.meta}
 							<div class="meta-badge">meta</div>
 						{/if}
